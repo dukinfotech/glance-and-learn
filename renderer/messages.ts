@@ -8,6 +8,8 @@ export const MESSAGES = {
     UPDATE: "Update",
     LOADING: "Loading...",
     NO_DATA: "No data",
+    SHOW_APP: "Show App",
+    EXIT: "Exit",
 
     // Tabs
     HOME_TAB: "Home",

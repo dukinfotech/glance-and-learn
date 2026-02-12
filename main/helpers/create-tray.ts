@@ -1,24 +1,31 @@
-
-import { app, Tray, Menu, BrowserWindow } from 'electron';
+import { app, Tray, Menu, BrowserWindow, nativeImage } from 'electron';
 import path from 'path';
+import { MESSAGES } from '../../renderer/messages';
 
 let tray: Tray | null = null;
 
 export const createTray = (mainWindow: BrowserWindow) => {
-    // Icons in build usually go to resources folder in the root or app.asar.unpacked/resources
-    // Since we are in main process, we need to find the correct path relative to the build entry point or development path.
+    // In production, app.getAppPath() points to the asar root. 
+    // In development, it points to the project root.
+    // 'resources' is now included in the files filter in electron-builder.yml
     const iconPath = path.join(app.getAppPath(), 'resources/icon.ico');
-    tray = new Tray(iconPath);
+    const icon = nativeImage.createFromPath(iconPath);
+
+    if (icon.isEmpty()) {
+        console.error('Tray icon is empty. Path might be incorrect:', iconPath);
+    }
+
+    tray = new Tray(icon);
 
     const contextMenu = Menu.buildFromTemplate([
         {
-            label: 'Hiện ứng dụng',
+            label: MESSAGES.SHOW_APP,
             click: () => {
                 mainWindow.show();
             }
         },
         {
-            label: 'Thoát',
+            label: MESSAGES.EXIT,
             click: () => {
                 (app as any).isQuitting = true;
                 app.quit();
