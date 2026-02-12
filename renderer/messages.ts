@@ -33,6 +33,7 @@ export const MESSAGES = {
     DB_NAME: "Database Name",
     DB_NAME_EXIST: "Database name already exists",
     CONFIRM_DELETE_DB: "Delete this database?",
+    OPEN_DB_FOLDER: "Open Folder",
 
     FONT_SIZE: "Font Size (px)",
     INTERVAL: "Delay (seconds)",

@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, ipcMain, shell } from "electron";
 import { createWindow } from "../helpers";
 import { settings } from "../stores/settings";
 import path from "path";
@@ -11,6 +11,7 @@ import {
   listData,
   updateData,
   selectData,
+  getDBFolder,
 } from "../helpers/database";
 
 export default function ipcMainListener(
@@ -122,5 +123,9 @@ export default function ipcMainListener(
   ipcMain.handle("database.select-data", (event, arg) => {
     const data = selectData(arg.name);
     return data;
+  });
+
+  ipcMain.handle("database.open-folder", () => {
+    shell.openPath(getDBFolder());
   });
 }

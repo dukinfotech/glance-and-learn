@@ -29,9 +29,8 @@ const createTable = (name: string, columnNames: Array<string>) => {
   `;
 
   columnNames.forEach((columnName, i) => {
-    createTableSQL += `${columnName} ${
-      columnName === "isRemember" ? "INTEGER,\n" : "TEXT,\n"
-    }`;
+    createTableSQL += `${columnName} ${columnName === "isRemember" ? "INTEGER,\n" : "TEXT,\n"
+      }`;
   });
 
   createTableSQL += "createdAt DATE DEFAULT CURRENT_DATE);";
@@ -73,7 +72,7 @@ const insertDB = (
       }
     });
 
-    console.debug(insertBulkSQL);    
+    console.debug(insertBulkSQL);
 
     return insertBulkSQL;
   };
@@ -195,4 +194,12 @@ const selectData = (name: string) => {
   return rows;
 };
 
-export { listDB, insertDB, deleteDB, listData, updateData, selectData };
+export {
+  listDB,
+  insertDB,
+  deleteDB,
+  listData,
+  updateData,
+  selectData,
+  getDBFolder,
+};

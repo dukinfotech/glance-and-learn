@@ -13,7 +13,7 @@ import { useConfirmPrompt } from "../providers/ConfirmPromptProvider";
 import { useSettingStore } from "../stores/setting-store";
 import { useGlobalStore } from "../stores/global-store";
 import { PiClockCountdown, PiSplitHorizontal } from "react-icons/pi";
-import { BsDatabase, BsTrash3 } from "react-icons/bs";
+import { BsDatabase, BsTrash3, BsFolder2Open } from "react-icons/bs";
 import { toast } from "react-toastify";
 import useDatabase from "../hooks/useDatabase";
 import {
@@ -153,6 +153,10 @@ export default function SettingsTab() {
     changeRunOnStartup(runOnStartup);
   };
 
+  const handleOpenDBFolder = () => {
+    window.ipc.invoke("database.open-folder");
+  };
+
   return (
     <>
       <div className="flex justify-end">
@@ -203,6 +207,16 @@ export default function SettingsTab() {
           </Select>
           <Spacer x={1} />
           <CreateDBButton onClose={fetchListDB} />
+          <Spacer x={1} />
+          <Button
+            size="lg"
+            color="warning"
+            isIconOnly
+            title={MESSAGES.OPEN_DB_FOLDER}
+            onClick={handleOpenDBFolder}
+          >
+            <BsFolder2Open />
+          </Button>
         </div>
 
         <Spacer y={2} />
