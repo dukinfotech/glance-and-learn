@@ -48,12 +48,25 @@ let mainWindow: BrowserWindow;
   createTray(mainWindow);
 })();
 
+const { settings } = require("./stores/settings");
+
+app.on("ready", () => {
+  // Set initial login item settings
+  const runOnStartup = settings.get("runOnStartup");
+  app.setLoginItemSettings({
+    openAtLogin: runOnStartup,
+  });
+
+  // Watch for changes and update login item settings
+  settings.onDidChange("runOnStartup", (newValue: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin: newValue,
+    });
+  });
+});
+
 app.on("window-all-closed", () => {
   if ((app as any).isQuitting) {
     app.quit();
   }
 });
-
-app.setLoginItemSettings({
-  openAtLogin: true
-})

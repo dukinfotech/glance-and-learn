@@ -15,6 +15,7 @@ interface SettingType {
     bgColor: string;
     isFurigana: boolean;
   };
+  runOnStartup: boolean;
 }
 
 interface SettingStoreType extends SettingType {
@@ -29,6 +30,7 @@ interface SettingStoreType extends SettingType {
   changeIsFurigana: (isFurigana: boolean) => void;
   changeSplitedBy: (str: string) => void;
   changeBgColor: (color: string) => void;
+  changeRunOnStartup: (runOnStartup: boolean) => void;
 }
 
 export const useSettingStore = create<SettingStoreType>((set) => ({
@@ -45,6 +47,7 @@ export const useSettingStore = create<SettingStoreType>((set) => ({
     bgColor: "#FFFFFF",
     isFurigana: false,
   },
+  runOnStartup: true,
   loadSettings: (settings: SettingType) => set(() => ({ ...settings })),
   resetSettings: async () => {
     localStorage.clear();
@@ -139,5 +142,10 @@ export const useSettingStore = create<SettingStoreType>((set) => ({
       return {
         stickyWindow: { ...state.stickyWindow, bgColor: color },
       };
+    }),
+  changeRunOnStartup: (runOnStartup: boolean) =>
+    set((state) => {
+      window.ipc.send("settings.changed", { runOnStartup: runOnStartup });
+      return { runOnStartup: runOnStartup };
     }),
 }));

@@ -15,5 +15,6 @@ declare global {
       bgColor: string;
       isFurigana: boolean;
     };
+    runOnStartup: boolean;
   }
 }

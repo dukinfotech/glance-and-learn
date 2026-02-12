@@ -41,6 +41,7 @@ export const MESSAGES = {
     FURIGANA: "Show Furigana",
     BREAK_LINE: "Break line",
     SPLIT_BY: "Separator",
+    RUN_ON_STARTUP: "Run on startup",
 
     // Database Operations (Toasts)
     CREATE_DB_SUCCESS: "Database created successfully",

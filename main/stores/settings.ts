@@ -26,6 +26,7 @@ const settings = new Store<SettingType>({
       bgColor: "#FFFFFF",
       isFurigana: false,
     },
+    runOnStartup: true,
   },
   watch: true,
 });

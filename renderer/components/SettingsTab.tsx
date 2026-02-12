@@ -43,6 +43,8 @@ export default function SettingsTab() {
     changeSplitedBy,
     changeIsFurigana,
     changeBgColor,
+    runOnStartup,
+    changeRunOnStartup,
     resetSettings,
   } = useSettingStore();
   const [selectedDBKey, setSelectedDBKey] = useState(new Set([selectedDB]));
@@ -145,6 +147,10 @@ export default function SettingsTab() {
   const handleChangeBgColor = (color: string) => {
     changeBgColor(color);
     reloadSticky();
+  };
+
+  const handleChangeRunOnStartup = (runOnStartup: boolean) => {
+    changeRunOnStartup(runOnStartup);
   };
 
   return (
@@ -298,6 +304,19 @@ export default function SettingsTab() {
           bgColor={stickyWindow.bgColor}
           onChange={handleChangeBgColor}
         />
+
+        <Spacer y={2} />
+
+        <Switch
+          color="primary"
+          size="md"
+          isSelected={runOnStartup}
+          onValueChange={handleChangeRunOnStartup}
+        >
+          <div className="flex flex-col gap-1">
+            <p className="text-medium">{MESSAGES.RUN_ON_STARTUP}</p>
+          </div>
+        </Switch>
       </div>
     </>
   );
