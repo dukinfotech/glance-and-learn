@@ -161,7 +161,9 @@ export default function NextPage() {
             console.error("Furigana conversion failed", e);
           }
         }
-        newLines.push(_text);
+        if (_text.trim() !== "") {
+          newLines.push(_text);
+        }
       }
     } else {
       let _text = `${id}. ` + arrayValues.join(stickyWindow.splitedBy);
