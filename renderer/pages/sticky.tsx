@@ -240,7 +240,7 @@ export default function NextPage() {
         {displayLines.map((line, index) => (
           <React.Fragment key={index}>
             <div dangerouslySetInnerHTML={{ __html: line }} />
-            {index < displayLines.length - 1 && <hr className="border-gray-500 my-1" />}
+            {index < displayLines.length - 1 && <hr className="border-gray-300 my-1" />}
           </React.Fragment>
         ))}
       </div>
