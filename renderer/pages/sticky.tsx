@@ -1,22 +1,43 @@
 import { RiDraggable } from "react-icons/ri";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useSettingStore } from "../stores/setting-store";
 import Kuroshiro from "kuroshiro";
 import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
-import { SHOWN_COLUMNS, STICKY_WINDOW_DEFAULT_FONTSIZE } from "../const";
+import { SHOWN_COLUMNS, SPEECH_COLUMNS, SPEECH_VOICES, STICKY_WINDOW_DEFAULT_FONTSIZE } from "../const";
 import useDataBase from "../hooks/useDatabase";
+import Say, { Composer } from "react-say";
 
-// Define interface for data rows
+
 interface DataRow {
   id: number;
   [key: string]: any;
 }
+
+const stripHtml = (html: string) => {
+  if (typeof document === "undefined") return html;
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+};
 
 export default function NextPage() {
   const [shownColumns, setShownColumns] = useState<number[]>([]);
   const { selectedDB, stickyWindow, loadSettings } = useSettingStore();
   const [data, setData] = useState<DataRow[]>([]);
   const { selectData } = useDataBase();
+
+  const [speechText, setSpeechText] = useState<string>("");
+  const [speechColumns, setSpeechColumns] = useState<number[]>([]);
+  const [speechVoices, setSpeechVoices] = useState<{ [key: number]: string }>({});
+  const [showSpeech, setShowSpeech] = useState<boolean>(true);
+
+  interface SpeechTask {
+    text: string;
+    voiceURI: string | undefined;
+  }
+  const [speechTasks, setSpeechTasks] = useState<SpeechTask[]>([]);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [hasMounted, setHasMounted] = useState(false);
 
   // State for the current text to display
   const [displayLines, setDisplayLines] = useState<string[]>([]);
@@ -49,6 +70,34 @@ export default function NextPage() {
     } finally {
       setShownColumns(_shownColumns);
     }
+
+    let _speechColumns: number[] = [];
+    let _speechVoices: { [key: number]: string } = {};
+    try {
+      const stored = localStorage.getItem(SPEECH_COLUMNS);
+      if (stored) {
+        _speechColumns = JSON.parse(stored);
+      }
+      const storedVoices = localStorage.getItem(SPEECH_VOICES);
+      if (storedVoices) {
+        _speechVoices = JSON.parse(storedVoices);
+      }
+    } catch (e) {
+      console.error("Failed to parse speech settings", e);
+    } finally {
+      setSpeechColumns(_speechColumns);
+      setSpeechVoices(_speechVoices);
+      console.log("Loaded speechColumns:", _speechColumns, "speechVoices:", _speechVoices);
+    }
+
+    const updateVoices = () => {
+      setVoices(window.speechSynthesis.getVoices());
+    };
+    updateVoices();
+    window.speechSynthesis.onvoiceschanged = updateVoices;
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
   }, []);
 
   // Initialize Kuroshiro once
@@ -131,7 +180,34 @@ export default function NextPage() {
 
     setDisplayLines(newLines);
 
-  }, [counter, data, shownColumns, stickyWindow]);
+    // Prepare speech tasks
+    if (speechColumns && speechColumns.length > 0) {
+      const values = Object.values(row);
+      const tasks: SpeechTask[] = speechColumns
+        .filter(colIndex => values[colIndex] && String(values[colIndex]).trim() !== "")
+        .map(colIndex => ({
+          text: stripHtml(String(values[colIndex])),
+          voiceURI: speechVoices[colIndex]
+        }));
+
+      console.log("Generated speechTasks:", tasks);
+
+      // Briefly hide speech to force remount
+      setShowSpeech(false);
+      setSpeechTasks(tasks);
+      // For legacy text-based cancel effect
+      setSpeechText(tasks.map(t => t.text).join(". "));
+
+      if (typeof window !== "undefined") {
+        window.speechSynthesis.cancel();
+      }
+      setTimeout(() => setShowSpeech(true), 50);
+    } else {
+      console.log("No speech columns selected");
+      setSpeechTasks([]);
+      setSpeechText("");
+    }
+  }, [counter, data, shownColumns, stickyWindow, speechColumns, speechVoices]);
 
   // Update text when counter or data changes
   useEffect(() => {
@@ -158,6 +234,23 @@ export default function NextPage() {
     }
   }, [displayLines, stickyWindow.autoResize]);
 
+  const ponyfill = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return {
+      speechSynthesis: window.speechSynthesis,
+      SpeechSynthesisUtterance: window.SpeechSynthesisUtterance,
+    };
+  }, []);
+
+  useEffect(() => {
+    if (speechText) {
+      console.log("speechText changed to:", speechText);
+      if (typeof window !== "undefined") {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }, [speechText]);
+
 
   // Load settings
   useEffect(() => {
@@ -166,6 +259,7 @@ export default function NextPage() {
         loadSettings(settings);
       });
     });
+    setHasMounted(true);
   }, []);
 
   const randomCounter = (max: number) => {
@@ -244,6 +338,21 @@ export default function NextPage() {
           </React.Fragment>
         ))}
       </div>
+      {hasMounted && (
+        <Composer ponyfill={ponyfill}>
+          {showSpeech && speechTasks.length > 0 && speechTasks.map((task, idx) => {
+            const voice = task.voiceURI ? voices.find(v => v.voiceURI === task.voiceURI) : voices[0];
+            return (
+              <Say
+                ponyfill={ponyfill}
+                key={`${counter}-${idx}-${task.text}`}
+                text={task.text}
+                voice={voice}
+              />
+            );
+          })}
+        </Composer>
+      )}
     </div>
   );
 }

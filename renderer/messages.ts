@@ -64,6 +64,8 @@ export const MESSAGES = {
     // DataTable
     SEARCH_PLACEHOLDER: "Search",
     STICKY_CHECKBOX_TITLE: "Show on sticky",
+    SPEECH_CHECKBOX_TITLE: "Speech this column",
+
     COL_ID: "ID",
     COL_REMEMBERED: "Memorized",
     COL_CREATED_AT: "Created At",

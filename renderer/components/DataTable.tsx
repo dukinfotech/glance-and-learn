@@ -10,10 +10,13 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
+  Select,
+  SelectItem,
 } from "@nextui-org/react";
 import { useSettingStore } from "../stores/setting-store";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { SHOWN_COLUMNS } from "../const";
+import { SHOWN_COLUMNS, SPEECH_COLUMNS, SPEECH_VOICES } from "../const";
+
 import { useGlobalStore } from "../stores/global-store";
 import useDataBase from "../hooks/useDatabase";
 import { BsSearch } from "react-icons/bs";
@@ -25,7 +28,8 @@ type ColumnNameType = {
 };
 
 import { MESSAGES } from "../messages";
-import { PiTextTLight, PiTextTSlash } from "react-icons/pi";
+import { PiTextTLight, PiTextTSlash, PiSpeakerHighLight, PiSpeakerSlashLight, PiEyeLight, PiEyeSlashLight } from "react-icons/pi";
+
 
 const DEFAULT_COLUMN_NAMES = {
   ID: MESSAGES.COL_ID,
@@ -42,6 +46,32 @@ export default function DataTable() {
   const [keyword, setKeyword] = useState<string>("");
   const keywordRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [shownColumnsState, setShownColumnsState] = useState<number[]>([]);
+  const [speechColumnsState, setSpeechColumnsState] = useState<number[]>([]);
+  const [speechVoicesState, setSpeechVoicesState] = useState<{ [key: number]: string }>({});
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    try {
+      const storedShown = localStorage.getItem(SHOWN_COLUMNS);
+      if (storedShown) setShownColumnsState(JSON.parse(storedShown));
+      const storedSpeech = localStorage.getItem(SPEECH_COLUMNS);
+      if (storedSpeech) setSpeechColumnsState(JSON.parse(storedSpeech));
+      const storedVoices = localStorage.getItem(SPEECH_VOICES);
+      if (storedVoices) setSpeechVoicesState(JSON.parse(storedVoices));
+    } catch (e) {
+      console.error("Failed to load columns from localStorage", e);
+    }
+
+    const updateVoices = () => {
+      setVoices(window.speechSynthesis.getVoices());
+    };
+    updateVoices();
+    window.speechSynthesis.onvoiceschanged = updateVoices;
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, []);
 
   const columnNames = useMemo(() => {
     if (data && data.length > 0) {
@@ -111,6 +141,24 @@ export default function DataTable() {
       });
     }
     localStorage.setItem(SHOWN_COLUMNS, JSON.stringify(shownColumns));
+    setShownColumnsState(shownColumns);
+
+    // Only initialize if not exists to avoid overwriting user selection
+    const storedSpeech = localStorage.getItem(SPEECH_COLUMNS);
+    if (!storedSpeech) {
+      let speechColumns: number[] = [];
+      if (data && data.length > 0) {
+        const firstDataObject = data[0];
+        Object.keys(firstDataObject).forEach((key, i) => {
+          // Skip id, isRemember, createdAt
+          if (i > 1 && i !== Object.keys(firstDataObject).length - 1) {
+            speechColumns.push(i - 1);
+          }
+        });
+      }
+      localStorage.setItem(SPEECH_COLUMNS, JSON.stringify(speechColumns));
+      setSpeechColumnsState(speechColumns);
+    }
   }, [data]);
 
   const toggleRemember = useCallback((id: number, isSelected: boolean) => {
@@ -152,6 +200,61 @@ export default function DataTable() {
       shownColumns = shownColumns.filter((shownColumn) => shownColumn !== i);
     }
     localStorage.setItem(SHOWN_COLUMNS, JSON.stringify(shownColumns));
+    setShownColumnsState(shownColumns);
+    reloadSticky();
+  }, [reloadSticky]);
+
+  const handleToggleSpeechInSticky = useCallback((i: number, isSpeech: boolean) => {
+    let speechColumns: number[] = [];
+    try {
+      const stored = localStorage.getItem(SPEECH_COLUMNS);
+      if (stored) speechColumns = JSON.parse(stored);
+    } catch (e) {
+      console.error("Failed to parse SPEECH_COLUMNS", e);
+    }
+
+    if (isSpeech) {
+      if (!speechColumns.includes(i)) {
+        speechColumns.push(i);
+      }
+
+      // Default select first voice if none set
+      const storedVoices = localStorage.getItem(SPEECH_VOICES);
+      let speechVoices = {};
+      try {
+        if (storedVoices) speechVoices = JSON.parse(storedVoices);
+      } catch (e) {
+        console.error("Failed to parse SPEECH_VOICES", e);
+      }
+
+      if (!speechVoices[i]) {
+        const availableVoices = window.speechSynthesis.getVoices();
+        if (availableVoices.length > 0) {
+          speechVoices[i] = availableVoices[0].voiceURI;
+          localStorage.setItem(SPEECH_VOICES, JSON.stringify(speechVoices));
+          setSpeechVoicesState(speechVoices);
+        }
+      }
+    } else {
+      speechColumns = speechColumns.filter((speechColumn) => speechColumn !== i);
+    }
+    localStorage.setItem(SPEECH_COLUMNS, JSON.stringify(speechColumns));
+    setSpeechColumnsState(speechColumns);
+    reloadSticky();
+  }, [reloadSticky]);
+
+  const handleVoiceChange = useCallback((i: number, voiceURI: string) => {
+    let speechVoices: { [key: number]: string } = {};
+    try {
+      const stored = localStorage.getItem(SPEECH_VOICES);
+      if (stored) speechVoices = JSON.parse(stored);
+    } catch (e) {
+      console.error("Failed to parse SPEECH_VOICES", e);
+    }
+
+    speechVoices[i] = voiceURI;
+    localStorage.setItem(SPEECH_VOICES, JSON.stringify(speechVoices));
+    setSpeechVoicesState(speechVoices);
     reloadSticky();
   }, [reloadSticky]);
 
@@ -168,6 +271,11 @@ export default function DataTable() {
       handleChangeKeyword();
     }
   }
+
+  const formatVoiceName = (name: string, lang: string) => {
+    let cleanName = name.replace(/^Microsoft /, "").replace(/ Online \(Natural\) - .*/, "").replace(/ - .*/, "");
+    return `${cleanName} (${lang})`;
+  };
 
   return (
     <>
@@ -206,27 +314,89 @@ export default function DataTable() {
       <Table
         hideHeader={data.length === 0}
         isHeaderSticky
+        selectionMode="single"
+        color="primary"
         classNames={{
-          base: "max-h-[50vh] overflow-auto",
+          base: "max-h-[50vh] overflow-auto border-small border-divider rounded-medium",
+          table: "border-collapse",
+          th: "border-b border-r border-divider last:border-r-0",
+          td: "border-b border-r border-divider last:border-r-0",
+          tr: "hover:bg-default-100 cursor-pointer",
         }}
       >
         <TableHeader>
           {columnNames.map((columnName, i) => (
-            <TableColumn key={columnName.key}>
-              <>
-                {columnName.name}
-                {i > 1 && i < columnNames.length - 1 && (
-                  <Checkbox
-                    key={i}
-                    className="ml-1"
-                    title={MESSAGES.STICKY_CHECKBOX_TITLE}
-                    defaultSelected
-                    onChange={(e) =>
-                      handleToggleShowInSticky(i - 1, e.target.checked)
-                    }
-                  />
+            <TableColumn
+              key={columnName.key}
+              style={{
+                minWidth: (i > 1 && i < columnNames.length - 1) ? "250px" : "auto",
+              }}
+              className={columnName.key === "isRemember" ? "align-top text-center" : "align-top"}
+            >
+              <div className={`flex flex-col gap-2 py-2 h-full ${columnName.key === "isRemember" ? "items-center" : "justify-start"}`}>
+                <div className="flex items-center gap-1 min-h-[32px]">
+                  <span className="font-bold">{columnName.name}</span>
+                  {i > 1 && i < columnNames.length - 1 && (
+                    <div className="inline-flex items-center gap-1">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        className="min-w-6 w-6 h-6"
+                        title={MESSAGES.STICKY_CHECKBOX_TITLE}
+                        onClick={() =>
+                          handleToggleShowInSticky(i - 1, !shownColumnsState.includes(i - 1))
+                        }
+                      >
+                        {shownColumnsState.includes(i - 1) ? (
+                          <PiEyeLight className="text-primary text-base" />
+                        ) : (
+                          <PiEyeSlashLight className="text-gray-400 text-base" />
+                        )}
+                      </Button>
+
+                      {shownColumnsState.includes(i - 1) && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          className="min-w-6 w-6 h-6"
+                          title={MESSAGES.SPEECH_CHECKBOX_TITLE}
+                          onClick={() =>
+                            handleToggleSpeechInSticky(i - 1, !speechColumnsState.includes(i - 1))
+                          }
+                        >
+                          {speechColumnsState.includes(i - 1) ? (
+                            <PiSpeakerHighLight className="text-primary text-base" />
+                          ) : (
+                            <PiSpeakerSlashLight className="text-gray-400 text-base" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {i > 1 && i < columnNames.length - 1 && speechColumnsState.includes(i - 1) && voices.length > 0 && (
+                  <Select
+                    size="sm"
+                    aria-label="Select voice"
+                    placeholder="Voice"
+                    className="w-full min-w-[120px]"
+                    selectedKeys={speechVoicesState[i - 1] ? [speechVoicesState[i - 1]] : []}
+                    onSelectionChange={(keys) => {
+                      const voiceURI = Array.from(keys)[0] as string;
+                      if (voiceURI) handleVoiceChange(i - 1, voiceURI);
+                    }}
+                  >
+                    {voices.map((voice) => (
+                      <SelectItem key={voice.voiceURI} textValue={formatVoiceName(voice.name, voice.lang)}>
+                        {formatVoiceName(voice.name, voice.lang)}
+                      </SelectItem>
+                    ))}
+                  </Select>
                 )}
-              </>
+              </div>
             </TableColumn>
           ))}
         </TableHeader>
@@ -246,10 +416,12 @@ export default function DataTable() {
                       }}
                     ></span>
                   ) : (
-                    <Checkbox
-                      defaultSelected={dataObject[columnName.key] === 1}
-                      onChange={(e) => toggleRemember(dataObject["id"], e.target.checked)}
-                    />
+                    <div className="flex justify-center w-full">
+                      <Checkbox
+                        defaultSelected={dataObject[columnName.key] === 1}
+                        onChange={(e) => toggleRemember(dataObject["id"], e.target.checked)}
+                      />
+                    </div>
                   )}
                 </TableCell>
               ))}
