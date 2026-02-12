@@ -5,18 +5,20 @@ import path from 'path';
 let tray: Tray | null = null;
 
 export const createTray = (mainWindow: BrowserWindow) => {
-    const iconPath = path.join(__dirname, '../resources/icon.ico');
+    // Icons in build usually go to resources folder in the root or app.asar.unpacked/resources
+    // Since we are in main process, we need to find the correct path relative to the build entry point or development path.
+    const iconPath = path.join(app.getAppPath(), 'resources/icon.ico');
     tray = new Tray(iconPath);
 
     const contextMenu = Menu.buildFromTemplate([
         {
-            label: 'Show App',
+            label: 'Hiện ứng dụng',
             click: () => {
                 mainWindow.show();
             }
         },
         {
-            label: 'Quit',
+            label: 'Thoát',
             click: () => {
                 (app as any).isQuitting = true;
                 app.quit();

@@ -54,6 +54,7 @@ const useDataBase = () => {
     } catch (error) {
       toast.error(MESSAGES.LOAD_DATA_FAIL);
       console.error(error);
+      return [];
     }
   }, []);
 

@@ -44,7 +44,7 @@ export default function DataTable() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const columnNames = useMemo(() => {
-    if (data.length > 0) {
+    if (data && data.length > 0) {
       let _columnNames: ColumnNameType[] = [];
       const firstRow = data[0];
 
@@ -101,7 +101,7 @@ export default function DataTable() {
   // Shown columns
   useEffect(() => {
     let shownColumns: number[] = [];
-    if (data.length > 0) {
+    if (data && data.length > 0) {
       const firstDataObject = data[0];
       Object.keys(firstDataObject).forEach((key, i) => {
         // Skip id, isRemember, createdAt

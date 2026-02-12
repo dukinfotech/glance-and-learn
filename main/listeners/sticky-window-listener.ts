@@ -10,7 +10,4 @@ export default function stickyWindowListener(
   stickyWindow.on("close", () => {
     mainWindow.webContents.send("stickyWindow.hided");
   });
-  mainWindow.on("close", () => {
-    mainWindow.webContents.send("stickyWindow.hided");
-  });
 }

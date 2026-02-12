@@ -4,11 +4,10 @@ export default function mainWindowListener(mainWindow: BrowserWindow) {
   let isQuitting = false;
 
   mainWindow.on("close", (e) => {
-    if (!isQuitting) {
+    if (!(app as any).isQuitting) {
       e.preventDefault();
       mainWindow.hide();
     }
-    return false;
   });
 
   // Listen for the 'before-quit' event on the app instance

@@ -49,7 +49,9 @@ let mainWindow: BrowserWindow;
 })();
 
 app.on("window-all-closed", () => {
-  app.quit();
+  if ((app as any).isQuitting) {
+    app.quit();
+  }
 });
 
 app.setLoginItemSettings({
