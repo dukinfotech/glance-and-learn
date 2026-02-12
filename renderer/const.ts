@@ -1,4 +1,4 @@
-export const APP_NAME = "Học Thuộc Lòng";
+export const APP_NAME = "Glance And Learn";
 
 export const SHOWN_COLUMNS = "shown_columns";
 
