@@ -133,7 +133,7 @@ export default function SettingsTab() {
   };
 
   const handleDeleteDB = async (dbName: string) => {
-    const isConfirmed = await show(MESSAGES.CONFIRM_DELETE_DB(dbName));
+    const isConfirmed = await show(MESSAGES.CONFIRM_DELETE_DB);
     if (isConfirmed) {
       await deleteDB(dbName);
       setSelectedDBKey(new Set([]));

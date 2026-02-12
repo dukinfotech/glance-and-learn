@@ -32,7 +32,7 @@ export const MESSAGES = {
     BG_COLOR_PICKER: "Background Color",
     DB_NAME: "Database Name",
     DB_NAME_EXIST: "Database name already exists",
-    CONFIRM_DELETE_DB: (name: string) => `Delete database: ${name}?`,
+    CONFIRM_DELETE_DB: "Delete this database?",
 
     FONT_SIZE: "Font Size (px)",
     INTERVAL: "Delay (seconds)",

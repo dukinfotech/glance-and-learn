@@ -1,4 +1,4 @@
-appId: Glance And Learn
+appId: glance-and-learn
 productName: Glance And Learn
 copyright: Copyright © 2024 dukinfotech@gmail.com
 directories:
@@ -8,6 +8,6 @@ files:
   - from: .
     filter:
       - package.json
-      - app
-      - resources
+      - app/**/*
+      - resources/**/*
 publish: null
