@@ -14,6 +14,8 @@ interface SettingType {
     splitedBy: string;
     bgColor: string;
     isFurigana: boolean;
+    pitch: number;
+    rate: number;
   };
   runOnStartup: boolean;
 }
@@ -30,6 +32,8 @@ interface SettingStoreType extends SettingType {
   changeIsFurigana: (isFurigana: boolean) => void;
   changeSplitedBy: (str: string) => void;
   changeBgColor: (color: string) => void;
+  changePitch: (pitch: number) => void;
+  changeRate: (rate: number) => void;
   changeRunOnStartup: (runOnStartup: boolean) => void;
 }
 
@@ -46,6 +50,8 @@ export const useSettingStore = create<SettingStoreType>((set) => ({
     splitedBy: "🍠",
     bgColor: "#FFFFFF",
     isFurigana: false,
+    pitch: 1,
+    rate: 1,
   },
   runOnStartup: true,
   loadSettings: (settings: SettingType) => set(() => ({ ...settings })),
@@ -141,6 +147,24 @@ export const useSettingStore = create<SettingStoreType>((set) => ({
       });
       return {
         stickyWindow: { ...state.stickyWindow, bgColor: color },
+      };
+    }),
+  changePitch: (pitch: number) =>
+    set((state) => {
+      window.ipc.send("settings.changed", {
+        stickyWindow: { ...state.stickyWindow, pitch: pitch },
+      });
+      return {
+        stickyWindow: { ...state.stickyWindow, pitch: pitch },
+      };
+    }),
+  changeRate: (rate: number) =>
+    set((state) => {
+      window.ipc.send("settings.changed", {
+        stickyWindow: { ...state.stickyWindow, rate: rate },
+      });
+      return {
+        stickyWindow: { ...state.stickyWindow, rate: rate },
       };
     }),
   changeRunOnStartup: (runOnStartup: boolean) =>

@@ -350,6 +350,8 @@ export default function NextPage() {
                 key={`${counter}-${idx}-${task.text}`}
                 text={task.text}
                 voice={voice}
+                pitch={stickyWindow.pitch ?? 1}
+                rate={stickyWindow.rate ?? 1}
               />
             );
           })}

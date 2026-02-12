@@ -14,6 +14,8 @@ declare global {
       splitedBy: string;
       bgColor: string;
       isFurigana: boolean;
+      pitch: number;
+      rate: number;
     };
     runOnStartup: boolean;
   }

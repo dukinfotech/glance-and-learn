@@ -4,6 +4,8 @@ import {
   STICKY_WINDOW_DEFAULT_HEIGHT,
   STICKY_WINDOW_DEFAULT_INTERVAL,
   STICKY_WINDOW_DEFAULT_WIDTH,
+  STICKY_WINDOW_DEFAULT_PITCH,
+  STICKY_WINDOW_DEFAULT_RATE,
   WINDOW_DEFAULT_HEIGHT,
   WINDOW_DEFAULT_WIDTH,
 } from "../../renderer/const";
@@ -25,6 +27,8 @@ const settings = new Store<SettingType>({
       splitedBy: "🍠",
       bgColor: "#FFFFFF",
       isFurigana: false,
+      pitch: STICKY_WINDOW_DEFAULT_PITCH,
+      rate: STICKY_WINDOW_DEFAULT_RATE,
     },
     runOnStartup: true,
   },

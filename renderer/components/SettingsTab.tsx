@@ -43,6 +43,8 @@ export default function SettingsTab() {
     changeSplitedBy,
     changeIsFurigana,
     changeBgColor,
+    changePitch,
+    changeRate,
     runOnStartup,
     changeRunOnStartup,
     resetSettings,
@@ -151,6 +153,16 @@ export default function SettingsTab() {
 
   const handleChangeRunOnStartup = (runOnStartup: boolean) => {
     changeRunOnStartup(runOnStartup);
+  };
+
+  const handleChangePitch = (pitch: string) => {
+    changePitch(parseFloat(pitch));
+    reloadSticky();
+  };
+
+  const handleChangeRate = (rate: string) => {
+    changeRate(parseFloat(rate));
+    reloadSticky();
   };
 
   const handleOpenDBFolder = () => {
@@ -298,6 +310,33 @@ export default function SettingsTab() {
             <p className="text-medium">{MESSAGES.BREAK_LINE}</p>
           </div>
         </Switch>
+
+        <Spacer y={2} />
+
+        <div className="flex gap-2">
+          <Input
+            color="primary"
+            label={MESSAGES.SPEECH_PITCH}
+            type="number"
+            step={0.1}
+            min={0}
+            max={2}
+            value={(stickyWindow.pitch ?? 1).toString()}
+            onValueChange={handleChangePitch}
+            variant="flat"
+          />
+          <Input
+            color="primary"
+            label={MESSAGES.SPEECH_RATE}
+            type="number"
+            step={0.1}
+            min={0.1}
+            max={10}
+            value={(stickyWindow.rate ?? 1).toString()}
+            onValueChange={handleChangeRate}
+            variant="flat"
+          />
+        </div>
 
         <Spacer y={2} />
 

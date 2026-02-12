@@ -43,6 +43,8 @@ export const MESSAGES = {
     BREAK_LINE: "Break line",
     SPLIT_BY: "Separator",
     RUN_ON_STARTUP: "Run on startup",
+    SPEECH_PITCH: "Speech Pitch",
+    SPEECH_RATE: "Speech Rate",
 
     // Database Operations (Toasts)
     CREATE_DB_SUCCESS: "Database created successfully",
