@@ -1,0 +1,12 @@
+appId: Học Thuộc Lòng
+productName: Học Thuộc Lòng
+copyright: Copyright © 2024 dukinfotech@gmail.com
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+publish: null
