@@ -172,6 +172,29 @@ export default function DataTable() {
 
   }, [selectedDB, updateData]);
 
+  const handleSpeak = useCallback((text: string, columnIndex: number) => {
+    if (!text) return;
+
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+
+    // Strip HTML tags
+    const cleanText = text.replace(/<[^>]*>?/gm, '');
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
+    // Find assigned voice
+    const requestedVoiceURI = speechVoicesState[columnIndex];
+    if (requestedVoiceURI) {
+      const selectedVoice = voices.find(v => v.voiceURI === requestedVoiceURI);
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+    }
+
+    window.speechSynthesis.speak(utterance);
+  }, [speechVoicesState, voices]);
+
   const reloadSticky = useCallback(() => {
     // Logic for reloading sticky window seems a bit hacky (toggle twice),
     // keeping it but maybe we should find a better way if possible.
@@ -407,14 +430,27 @@ export default function DataTable() {
         >
           {data.map((dataObject, i) => (
             <TableRow key={i}>
-              {columnNames.map((columnName) => (
+              {columnNames.map((columnName, j) => (
                 <TableCell key={columnName.key}>
                   {columnName.key !== "isRemember" ? (
-                    <span
-                      dangerouslySetInnerHTML={{
-                        __html: dataObject[columnName.key],
-                      }}
-                    ></span>
+                    <div className="flex items-center gap-2">
+                      {j > 1 && j < columnNames.length - 1 && speechColumnsState.includes(j - 1) && dataObject[columnName.key] && (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          className="min-w-6 w-6 h-6"
+                          onPress={() => handleSpeak(dataObject[columnName.key], j - 1)}
+                        >
+                          <PiSpeakerHighLight className="text-primary text-base" />
+                        </Button>
+                      )}
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: dataObject[columnName.key],
+                        }}
+                      ></span>
+                    </div>
                   ) : (
                     <div className="flex justify-center w-full">
                       <Checkbox
