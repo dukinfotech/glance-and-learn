@@ -42,7 +42,7 @@ export default function DataTable() {
   const { selectedDB } = useSettingStore();
   const { isShowSticky, toggleShowSticky } = useGlobalStore();
   const [data, setData] = useState<Array<any>>([]);
-  const { listData, updateData } = useDataBase();
+  const { listData, updateData, logError } = useDataBase();
   const [keyword, setKeyword] = useState<string>("");
   const keywordRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -121,6 +121,7 @@ export default function DataTable() {
           setData(_data);
         } catch (e) {
           console.error("Failed to list data", e);
+          logError(e);
         } finally {
           setIsLoading(false);
         }

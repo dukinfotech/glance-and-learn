@@ -84,7 +84,11 @@ const useDataBase = () => {
     }
   }, []);
 
-  return { listDB, insertDB, deleteDB, listData, updateData, selectData };
+  const logError = useCallback((error: any) => {
+    window.ipc.send("database.log-error", { error });
+  }, []);
+
+  return { listDB, insertDB, deleteDB, listData, updateData, selectData, logError };
 };
 
 export default useDataBase;

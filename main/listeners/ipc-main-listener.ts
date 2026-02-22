@@ -13,6 +13,7 @@ import {
   selectData,
   getDBFolder,
 } from "../helpers/database";
+import { logError } from "../helpers/logger";
 
 export default function ipcMainListener(
   mainWindow: BrowserWindow
@@ -127,5 +128,9 @@ export default function ipcMainListener(
 
   ipcMain.handle("database.open-folder", () => {
     shell.openPath(getDBFolder());
+  });
+
+  ipcMain.on("database.log-error", (event, arg) => {
+    logError(arg.error);
   });
 }

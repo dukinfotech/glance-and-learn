@@ -39,7 +39,7 @@ interface CreateDBModalProps {
 }
 
 export default function CreateDBModal({ onClose }: CreateDBModalProps) {
-  const { insertDB, listDB } = useDataBase();
+  const { insertDB, listDB, logError } = useDataBase();
   const [databases, setDatabases] = useState<DBType[]>([]);
   const [dataSet, setDataSet] = useState<DataSetType>(defaultDataSet);
 
@@ -89,6 +89,7 @@ export default function CreateDBModal({ onClose }: CreateDBModalProps) {
     } catch (error) {
       toast.error(MESSAGES.CREATE_DB_FAIL);
       console.error(error);
+      logError(error);
     }
   };
 

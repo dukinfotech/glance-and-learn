@@ -5,6 +5,7 @@ import { createWindow } from "./helpers";
 import mainWindowListener from "./listeners/main-window-listener";
 import ipcMainListener from "./listeners/ipc-main-listener";
 import { WINDOW_DEFAULT_HEIGHT, WINDOW_DEFAULT_WIDTH } from "../renderer/const";
+import { logError } from "./helpers/logger";
 
 export const isProd = process.env.NODE_ENV === "production";
 
@@ -63,6 +64,15 @@ app.on("ready", () => {
       openAtLogin: newValue,
     });
   });
+});
+
+// Global error handling
+process.on("uncaughtException", (error) => {
+  logError(error);
+});
+
+process.on("unhandledRejection", (reason) => {
+  logError(reason);
 });
 
 app.on("window-all-closed", () => {
