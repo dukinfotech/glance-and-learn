@@ -13,9 +13,9 @@ export default async function readDataFromExcel(dataSet: DataSetType): Promise<P
 
     const file = await workbook.xlsx.load(buffer);
 
-    const worksheet = file.getWorksheet(dataSet.sheetNumber);
+    const worksheet = file.getWorksheet(dataSet.sheetName);
     if (!worksheet) {
-      throw new Error(`Worksheet ${dataSet.sheetNumber} not found`);
+      throw new Error(`Worksheet ${dataSet.sheetName} not found`);
     }
 
     const rows = worksheet.getRows(

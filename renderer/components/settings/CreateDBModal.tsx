@@ -21,7 +21,7 @@ export type DataSetType = {
   rowTo: number;
   columnFrom: number;
   columnTo: number;
-  sheetNumber: number;
+  sheetName: string;
 };
 
 const defaultDataSet: DataSetType = {
@@ -31,7 +31,7 @@ const defaultDataSet: DataSetType = {
   rowTo: 1,
   columnFrom: 1,
   columnTo: 1,
-  sheetNumber: 1,
+  sheetName: "",
 };
 
 interface CreateDBModalProps {
@@ -61,7 +61,7 @@ export default function CreateDBModal({ onClose }: CreateDBModalProps) {
       dataSet.rowFrom >= 1 &&
       dataSet.rowTo >= 1 &&
       dataSet.rowTo >= dataSet.rowFrom &&
-      dataSet.sheetNumber >= 1
+      dataSet.sheetName
     );
   }, [dataSet]);
 
@@ -126,12 +126,11 @@ export default function CreateDBModal({ onClose }: CreateDBModalProps) {
 
           <Input
             isRequired
-            label="Sheet"
-            type="number"
-            min={1}
-            value={dataSet.sheetNumber.toString()}
+            label="Sheet Name"
+            type="text"
+            value={dataSet.sheetName}
             onValueChange={(value) =>
-              setDataSet({ ...dataSet, sheetNumber: parseInt(value) })
+              setDataSet({ ...dataSet, sheetName: value })
             }
             variant="flat"
           />
