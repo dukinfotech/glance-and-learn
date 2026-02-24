@@ -13,6 +13,8 @@ import {
   Select,
   SelectItem,
 } from "@nextui-org/react";
+import Kuroshiro from "kuroshiro";
+import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 import { useSettingStore } from "../stores/setting-store";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { SHOWN_COLUMNS, SPEECH_COLUMNS, SPEECH_VOICES } from "../const";
@@ -38,8 +40,27 @@ const DEFAULT_COLUMN_NAMES = {
   PREFIX: MESSAGES.COL_PREFIX
 }
 
+const FuriganaCell = ({ text, kuroshiro, isFurigana }: { text: string, kuroshiro: Kuroshiro | null, isFurigana: boolean }) => {
+  const [convertedText, setConvertedText] = useState(text);
+
+  useEffect(() => {
+    if (isFurigana && kuroshiro && text) {
+      kuroshiro.convert(text, { mode: "furigana", to: "hiragana" })
+        .then(res => setConvertedText(res))
+        .catch(err => {
+          console.error("Furigana conversion failed", err);
+          setConvertedText(text);
+        });
+    } else {
+      setConvertedText(text);
+    }
+  }, [text, kuroshiro, isFurigana]);
+
+  return <span dangerouslySetInnerHTML={{ __html: convertedText }}></span>;
+};
+
 export default function DataTable() {
-  const { selectedDB } = useSettingStore();
+  const { selectedDB, stickyWindow } = useSettingStore();
   const { isShowSticky, toggleShowSticky } = useGlobalStore();
   const [data, setData] = useState<Array<any>>([]);
   const { listData, updateData, logError } = useDataBase();
@@ -50,6 +71,27 @@ export default function DataTable() {
   const [speechColumnsState, setSpeechColumnsState] = useState<number[]>([]);
   const [speechVoicesState, setSpeechVoicesState] = useState<{ [key: number]: string }>({});
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const kuroshiroRef = useRef<Kuroshiro | null>(null);
+
+  // Initialize Kuroshiro once
+  useEffect(() => {
+    const initKuroshiro = async () => {
+      if (!kuroshiroRef.current) {
+        try {
+          const kuroshiro = new Kuroshiro();
+          await kuroshiro.init(new KuromojiAnalyzer({ dictPath: "/sticky/kuromoji/dict" }));
+          kuroshiroRef.current = kuroshiro;
+          // Trigger a re-render once kuroshiro is ready if furigana is enabled
+          if (stickyWindow.isFurigana) {
+            setData(prev => [...prev]);
+          }
+        } catch (err) {
+          console.error("Failed to initialize Kuroshiro", err);
+        }
+      }
+    };
+    initKuroshiro();
+  }, [stickyWindow.isFurigana]);
 
   useEffect(() => {
     try {
@@ -446,11 +488,11 @@ export default function DataTable() {
                           <PiSpeakerHighLight className="text-primary text-base" />
                         </Button>
                       )}
-                      <span
-                        dangerouslySetInnerHTML={{
-                          __html: dataObject[columnName.key],
-                        }}
-                      ></span>
+                      <FuriganaCell
+                        text={dataObject[columnName.key]}
+                        kuroshiro={kuroshiroRef.current}
+                        isFurigana={stickyWindow.isFurigana}
+                      />
                     </div>
                   ) : (
                     <div className="flex justify-center w-full">
