@@ -18,7 +18,6 @@ import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 import { useSettingStore } from "../stores/setting-store";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { SHOWN_COLUMNS, SPEECH_COLUMNS, SPEECH_VOICES } from "../const";
-
 import { useGlobalStore } from "../stores/global-store";
 import useDataBase from "../hooks/useDatabase";
 import { BsSearch } from "react-icons/bs";
@@ -42,21 +41,35 @@ const DEFAULT_COLUMN_NAMES = {
 
 const FuriganaCell = ({ text, kuroshiro, isFurigana }: { text: string, kuroshiro: Kuroshiro | null, isFurigana: boolean }) => {
   const [convertedText, setConvertedText] = useState(text);
+  const { stickyWindow } = useSettingStore();
 
   useEffect(() => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/html");
+
+    // tìm tất cả phần tử có style
+    (doc.querySelectorAll("[style]") as unknown as HTMLElement[]).forEach(el => {
+      el.style.removeProperty("font-size");
+    });
+
+    const result = doc.body.innerHTML;
+
     if (isFurigana && kuroshiro && text) {
-      kuroshiro.convert(text, { mode: "furigana", to: "hiragana" })
+      kuroshiro.convert(result, { mode: "furigana", to: "hiragana" })
         .then(res => setConvertedText(res))
         .catch(err => {
           console.error("Furigana conversion failed", err);
-          setConvertedText(text);
+          setConvertedText(result);
         });
     } else {
-      setConvertedText(text);
+      setConvertedText(result);
     }
   }, [text, kuroshiro, isFurigana]);
 
-  return <span dangerouslySetInnerHTML={{ __html: convertedText }}></span>;
+  return <span
+    style={{ fontSize: `${stickyWindow.fontSize}px` }}
+    dangerouslySetInnerHTML={{ __html: convertedText }}
+  ></span>;
 };
 
 export default function DataTable() {
