@@ -1,9 +1,6 @@
-export const APP_NAME = "Glance And Learn";
+export const APP_NAME = "Glance And Learn"; ``
 
-export const SHOWN_COLUMNS = "shown_columns";
-export const SPEECH_COLUMNS = "speech_columns";
-export const SPEECH_VOICES = "speech_voices";
-
+export const COLUMN_SETTINGS = "column_settings";
 
 export const WINDOW_DEFAULT_WIDTH = 800;
 export const WINDOW_DEFAULT_HEIGHT = 800;

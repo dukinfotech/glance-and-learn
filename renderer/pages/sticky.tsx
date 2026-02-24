@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { useSettingStore } from "../stores/setting-store";
 import Kuroshiro from "kuroshiro";
 import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
-import { SHOWN_COLUMNS, SPEECH_COLUMNS, SPEECH_VOICES, STICKY_WINDOW_DEFAULT_FONTSIZE } from "../const";
+import { COLUMN_SETTINGS, STICKY_WINDOW_DEFAULT_FONTSIZE } from "../const";
 import useDataBase from "../hooks/useDatabase";
 import Say, { Composer } from "react-say";
 
@@ -11,6 +11,13 @@ import Say, { Composer } from "react-say";
 interface DataRow {
   id: number;
   [key: string]: any;
+}
+
+type ColumnSettingsType = {
+  index: number;
+  isShown: boolean;
+  isSpeech: boolean;
+  voiceName: string;
 }
 
 const stripHtml = (html: string) => {
@@ -21,14 +28,12 @@ const stripHtml = (html: string) => {
 };
 
 export default function NextPage() {
-  const [shownColumns, setShownColumns] = useState<number[]>([]);
   const { selectedDB, stickyWindow, loadSettings } = useSettingStore();
   const [data, setData] = useState<DataRow[]>([]);
   const { selectData } = useDataBase();
 
   const [speechText, setSpeechText] = useState<string>("");
-  const [speechColumns, setSpeechColumns] = useState<number[]>([]);
-  const [speechVoices, setSpeechVoices] = useState<{ [key: number]: string }>({});
+  const [columnSettings, setColumnSettings] = useState<ColumnSettingsType[]>([]);
   const [showSpeech, setShowSpeech] = useState<boolean>(true);
 
   interface SpeechTask {
@@ -59,35 +64,13 @@ export default function NextPage() {
   const interval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    let _shownColumns: number[] = [];
     try {
-      const stored = localStorage.getItem(SHOWN_COLUMNS);
+      const stored = localStorage.getItem(COLUMN_SETTINGS);
       if (stored) {
-        _shownColumns = JSON.parse(stored);
+        setColumnSettings(JSON.parse(stored));
       }
     } catch (e) {
-      console.error("Failed to parse SHOWN_COLUMNS", e);
-    } finally {
-      setShownColumns(_shownColumns);
-    }
-
-    let _speechColumns: number[] = [];
-    let _speechVoices: { [key: number]: string } = {};
-    try {
-      const stored = localStorage.getItem(SPEECH_COLUMNS);
-      if (stored) {
-        _speechColumns = JSON.parse(stored);
-      }
-      const storedVoices = localStorage.getItem(SPEECH_VOICES);
-      if (storedVoices) {
-        _speechVoices = JSON.parse(storedVoices);
-      }
-    } catch (e) {
-      console.error("Failed to parse speech settings", e);
-    } finally {
-      setSpeechColumns(_speechColumns);
-      setSpeechVoices(_speechVoices);
-      console.log("Loaded speechColumns:", _speechColumns, "speechVoices:", _speechVoices);
+      console.error("Failed to parse column settings", e);
     }
 
     const updateVoices = () => {
@@ -123,27 +106,14 @@ export default function NextPage() {
     const row = data[counter];
     if (!row) return;
 
-    // Extract values, skipping specific keys if needed or based on index
-    // The original logic relied on Object.values and index.
-    // We should probably rely on key filtering if possible, but sticking to original logic for now
-    // to avoid breaking behavior, just cleaning implementation.
+    // Extract values
     let arrayValues = Object.values(row);
-    const id = arrayValues[0] as number; // Assuming first value is ID as per original code
+    const id = arrayValues[0] as number;
 
-    if (shownColumns && shownColumns.length > 0) {
-      // The data source for sticky window (selectData) returns [id, col1, col2, ..., createdAt]
-      // It EXCLUDES 'isRemember'.
-      // index 0 is id, index 1 is col1 (what users see as "Cột 1"), etc.
-      // localStorage (SHOWN_COLUMNS) stores indices relative to the main table where:
-      // index 0 is id, index 1 is isRemember, index 2 is col1.
-      // In DataTable.tsx, handleToggleShowInSticky(i - 1) is called where i starts from 2 for col1.
-      // So col1 is stored as index 1.
-      // In sticky.tsx, when we iterate over selectData results:
-      // i=0 is id, i=1 is col1.
-      // Thus, for col1, shownColumns.includes(1) should match.
-      arrayValues = arrayValues.filter((_, i) => {
-        return shownColumns.includes(i);
-      });
+    const shownSettings = columnSettings.filter(s => s.isShown);
+    if (shownSettings.length > 0) {
+      const allValues = Object.values(row);
+      arrayValues = shownSettings.map(s => allValues[s.index]);
     }
 
     let newLines: string[] = [];
@@ -183,13 +153,14 @@ export default function NextPage() {
     setDisplayLines(newLines);
 
     // Prepare speech tasks
-    if (speechColumns && speechColumns.length > 0) {
-      const values = Object.values(row);
-      const tasks: SpeechTask[] = speechColumns
-        .filter(colIndex => values[colIndex] && String(values[colIndex]).trim() !== "")
-        .map(colIndex => ({
-          text: stripHtml(String(values[colIndex])),
-          voiceURI: speechVoices[colIndex]
+    const speechEnabledSettings = columnSettings.filter(s => s.isShown && s.isSpeech);
+    if (speechEnabledSettings.length > 0) {
+      const allValues = Object.values(row);
+      const tasks: SpeechTask[] = speechEnabledSettings
+        .filter(s => allValues[s.index] && String(allValues[s.index]).trim() !== "")
+        .map(s => ({
+          text: stripHtml(String(allValues[s.index])),
+          voiceURI: s.voiceName
         }));
 
       console.log("Generated speechTasks:", tasks);
@@ -205,11 +176,11 @@ export default function NextPage() {
       }
       setTimeout(() => setShowSpeech(true), 50);
     } else {
-      console.log("No speech columns selected");
+      console.log("No speech columns enabled");
       setSpeechTasks([]);
       setSpeechText("");
     }
-  }, [counter, data, shownColumns, stickyWindow, speechColumns, speechVoices]);
+  }, [counter, data, columnSettings, stickyWindow]);
 
   // Update text when counter or data changes
   useEffect(() => {
@@ -219,8 +190,6 @@ export default function NextPage() {
   // Auto-resize window when content changes
   useEffect(() => {
     if (stickyWindow.autoResize && stickyWindowRef.current) {
-      // We need to wait for render? React updates are fast.
-      // Let's use a small timeout to ensure DOM is updated
       const timer = setTimeout(async () => {
         if (stickyWindowRef.current) {
           const width = stickyWindowRef.current.clientWidth + STICKY_WINDOW_DEFAULT_FONTSIZE;
@@ -269,7 +238,6 @@ export default function NextPage() {
   };
 
   const startInterval = () => {
-    // console.log("startInterval"); // Removed console log
     if (interval.current) clearInterval(interval.current);
 
     interval.current = setInterval(() => {
@@ -285,7 +253,6 @@ export default function NextPage() {
   };
 
   const pauseInterval = () => {
-    // console.log("pauseInterval"); // Removed console log
     if (interval.current) {
       clearInterval(interval.current);
       interval.current = null;
@@ -298,17 +265,16 @@ export default function NextPage() {
       startInterval();
       return () => pauseInterval();
     }
-  }, [data.length, stickyWindow.interval, stickyWindow.isRandom]); // Added dependencies
+  }, [data.length, stickyWindow.interval, stickyWindow.isRandom]);
 
 
   // Trigger for CSS only this page
   useEffect(() => {
     if (stickyWindow.fontSize > 0) {
-      // Trigger for detect settings loaded
       const bodyTag = document.getElementsByTagName("body").item(0);
       if (bodyTag) {
         bodyTag.style.backgroundColor = stickyWindow.bgColor;
-        bodyTag.classList.add("h-screen", "w-screen", "overflow-hidden"); // Added overflow-hidden to prevent scrollbars
+        bodyTag.classList.add("h-screen", "w-screen", "overflow-hidden");
       }
 
       const nextRoot = document.getElementById("__next");
@@ -326,12 +292,12 @@ export default function NextPage() {
       style={{
         whiteSpace: "nowrap",
         fontSize: `${stickyWindow.fontSize}px`,
-        padding: "4px", // Added some padding
+        padding: "4px",
       }}
       onMouseEnter={pauseInterval}
       onMouseLeave={startInterval}
     >
-      <RiDraggable className="draggable mr-2 flex-shrink-0" /> {/* Prevent icon shrinking */}
+      <RiDraggable className="draggable mr-2 flex-shrink-0" />
       <div id="sticky-content">
         {displayLines.map((line, index) => (
           <React.Fragment key={index}>

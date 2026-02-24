@@ -17,7 +17,7 @@ import Kuroshiro from "kuroshiro";
 import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 import { useSettingStore } from "../stores/setting-store";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { SHOWN_COLUMNS, SPEECH_COLUMNS, SPEECH_VOICES } from "../const";
+import { COLUMN_SETTINGS } from "../const";
 import { useGlobalStore } from "../stores/global-store";
 import useDataBase from "../hooks/useDatabase";
 import { BsSearch } from "react-icons/bs";
@@ -27,6 +27,13 @@ type ColumnNameType = {
   name: string | null;
   sortable?: boolean;
 };
+
+type ColumnSettingsType = {
+  index: number;
+  isShown: boolean;
+  isSpeech: boolean;
+  voiceName: string;
+}
 
 import { MESSAGES } from "../messages";
 import { PiTextTLight, PiTextTSlash, PiSpeakerHighLight, PiSpeakerSlashLight, PiEyeLight, PiEyeSlashLight } from "react-icons/pi";
@@ -48,7 +55,7 @@ const FuriganaCell = ({ text, kuroshiro, isFurigana }: { text: string, kuroshiro
     const doc = parser.parseFromString(text, "text/html");
 
     // tìm tất cả phần tử có style
-    (doc.querySelectorAll("[style]") as unknown as HTMLElement[]).forEach(el => {
+    (doc.querySelectorAll("[style]") as NodeListOf<HTMLElement>).forEach(el => {
       el.style.removeProperty("font-size");
     });
 
@@ -80,9 +87,7 @@ export default function DataTable() {
   const [keyword, setKeyword] = useState<string>("");
   const keywordRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [shownColumnsState, setShownColumnsState] = useState<number[]>([]);
-  const [speechColumnsState, setSpeechColumnsState] = useState<number[]>([]);
-  const [speechVoicesState, setSpeechVoicesState] = useState<{ [key: number]: string }>({});
+  const [columnSettings, setColumnSettings] = useState<ColumnSettingsType[]>([]);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const kuroshiroRef = useRef<Kuroshiro | null>(null);
 
@@ -108,12 +113,11 @@ export default function DataTable() {
 
   useEffect(() => {
     try {
-      const storedShown = localStorage.getItem(SHOWN_COLUMNS);
-      if (storedShown) setShownColumnsState(JSON.parse(storedShown));
-      const storedSpeech = localStorage.getItem(SPEECH_COLUMNS);
-      if (storedSpeech) setSpeechColumnsState(JSON.parse(storedSpeech));
-      const storedVoices = localStorage.getItem(SPEECH_VOICES);
-      if (storedVoices) setSpeechVoicesState(JSON.parse(storedVoices));
+      const storedColumnSettings = localStorage.getItem(COLUMN_SETTINGS);
+
+      if (storedColumnSettings) {
+        setColumnSettings(JSON.parse(storedColumnSettings));
+      }
     } catch (e) {
       console.error("Failed to load columns from localStorage", e);
     }
@@ -189,38 +193,26 @@ export default function DataTable() {
     }
   }, [keyword, selectedDB, listData]); // Added listData dependency
 
-  // Shown columns
+  // Column settings
   useEffect(() => {
-    let shownColumns: number[] = [];
-    if (data && data.length > 0) {
+    if (data && data.length > 0 && columnSettings.length === 0 && voices.length > 0) {
       const firstDataObject = data[0];
+      const initialSettings: ColumnSettingsType[] = [];
       Object.keys(firstDataObject).forEach((key, i) => {
         // Skip id, isRemember, createdAt
         if (i > 1 && i !== Object.keys(firstDataObject).length - 1) {
-          shownColumns.push(i - 1);
+          initialSettings.push({
+            index: i - 1,
+            isShown: true,
+            isSpeech: true,
+            voiceName: voices[0].voiceURI,
+          });
         }
       });
+      localStorage.setItem(COLUMN_SETTINGS, JSON.stringify(initialSettings));
+      setColumnSettings(initialSettings);
     }
-    localStorage.setItem(SHOWN_COLUMNS, JSON.stringify(shownColumns));
-    setShownColumnsState(shownColumns);
-
-    // Only initialize if not exists to avoid overwriting user selection
-    const storedSpeech = localStorage.getItem(SPEECH_COLUMNS);
-    if (!storedSpeech) {
-      let speechColumns: number[] = [];
-      if (data && data.length > 0) {
-        const firstDataObject = data[0];
-        Object.keys(firstDataObject).forEach((key, i) => {
-          // Skip id, isRemember, createdAt
-          if (i > 1 && i !== Object.keys(firstDataObject).length - 1) {
-            speechColumns.push(i - 1);
-          }
-        });
-      }
-      localStorage.setItem(SPEECH_COLUMNS, JSON.stringify(speechColumns));
-      setSpeechColumnsState(speechColumns);
-    }
-  }, [data]);
+  }, [data, columnSettings.length, voices]);
 
   const toggleRemember = useCallback((id: number, isSelected: boolean) => {
     const isRemember = isSelected ? 1 : 0;
@@ -245,7 +237,8 @@ export default function DataTable() {
     const utterance = new SpeechSynthesisUtterance(cleanText);
 
     // Find assigned voice
-    const requestedVoiceURI = speechVoicesState[columnIndex];
+    const setting = columnSettings.find(s => s.index === columnIndex);
+    const requestedVoiceURI = setting?.voiceName;
     if (requestedVoiceURI) {
       const selectedVoice = voices.find(v => v.voiceURI === requestedVoiceURI);
       if (selectedVoice) {
@@ -254,7 +247,7 @@ export default function DataTable() {
     }
 
     window.speechSynthesis.speak(utterance);
-  }, [speechVoicesState, voices]);
+  }, [columnSettings, voices]);
 
   const reloadSticky = useCallback(() => {
     // Logic for reloading sticky window seems a bit hacky (toggle twice),
@@ -268,77 +261,48 @@ export default function DataTable() {
 
 
   const handleToggleShowInSticky = useCallback((i: number, isShow: boolean) => {
-    let shownColumns: number[] = [];
-    try {
-      const stored = localStorage.getItem(SHOWN_COLUMNS);
-      if (stored) shownColumns = JSON.parse(stored);
-    } catch (e) {
-      console.error("Failed to parse SHOWN_COLUMNS", e);
-    }
-
-    if (isShow) {
-      if (!shownColumns.includes(i)) {
-        shownColumns.push(i);
+    setColumnSettings(prev => {
+      let nextSettings = [...prev];
+      if (isShow) {
+        if (!nextSettings.find(s => s.index === i)) {
+          nextSettings.push({ index: i, isShown: true, isSpeech: true, voiceName: "" });
+        } else {
+          nextSettings = nextSettings.map(s => s.index === i ? { ...s, isShown: true } : s);
+        }
+      } else {
+        nextSettings = nextSettings.map(s => s.index === i ? { ...s, isShown: false } : s);
       }
-    } else {
-      shownColumns = shownColumns.filter((shownColumn) => shownColumn !== i);
-    }
-    localStorage.setItem(SHOWN_COLUMNS, JSON.stringify(shownColumns));
-    setShownColumnsState(shownColumns);
+      localStorage.setItem(COLUMN_SETTINGS, JSON.stringify(nextSettings));
+      return nextSettings;
+    });
     reloadSticky();
   }, [reloadSticky]);
 
   const handleToggleSpeechInSticky = useCallback((i: number, isSpeech: boolean) => {
-    let speechColumns: number[] = [];
-    try {
-      const stored = localStorage.getItem(SPEECH_COLUMNS);
-      if (stored) speechColumns = JSON.parse(stored);
-    } catch (e) {
-      console.error("Failed to parse SPEECH_COLUMNS", e);
-    }
-
-    if (isSpeech) {
-      if (!speechColumns.includes(i)) {
-        speechColumns.push(i);
-      }
-
-      // Default select first voice if none set
-      const storedVoices = localStorage.getItem(SPEECH_VOICES);
-      let speechVoices = {};
-      try {
-        if (storedVoices) speechVoices = JSON.parse(storedVoices);
-      } catch (e) {
-        console.error("Failed to parse SPEECH_VOICES", e);
-      }
-
-      if (!speechVoices[i]) {
-        const availableVoices = window.speechSynthesis.getVoices();
-        if (availableVoices.length > 0) {
-          speechVoices[i] = availableVoices[0].voiceURI;
-          localStorage.setItem(SPEECH_VOICES, JSON.stringify(speechVoices));
-          setSpeechVoicesState(speechVoices);
+    setColumnSettings(prev => {
+      const nextSettings = prev.map(s => {
+        if (s.index === i) {
+          let voiceName = s.voiceName;
+          if (isSpeech && !voiceName) {
+            const availableVoices = window.speechSynthesis.getVoices();
+            if (availableVoices.length > 0) voiceName = availableVoices[0].voiceURI;
+          }
+          return { ...s, isSpeech, voiceName };
         }
-      }
-    } else {
-      speechColumns = speechColumns.filter((speechColumn) => speechColumn !== i);
-    }
-    localStorage.setItem(SPEECH_COLUMNS, JSON.stringify(speechColumns));
-    setSpeechColumnsState(speechColumns);
+        return s;
+      });
+      localStorage.setItem(COLUMN_SETTINGS, JSON.stringify(nextSettings));
+      return nextSettings;
+    });
     reloadSticky();
   }, [reloadSticky]);
 
   const handleVoiceChange = useCallback((i: number, voiceURI: string) => {
-    let speechVoices: { [key: number]: string } = {};
-    try {
-      const stored = localStorage.getItem(SPEECH_VOICES);
-      if (stored) speechVoices = JSON.parse(stored);
-    } catch (e) {
-      console.error("Failed to parse SPEECH_VOICES", e);
-    }
-
-    speechVoices[i] = voiceURI;
-    localStorage.setItem(SPEECH_VOICES, JSON.stringify(speechVoices));
-    setSpeechVoicesState(speechVoices);
+    setColumnSettings(prev => {
+      const nextSettings = prev.map(s => s.index === i ? { ...s, voiceName: voiceURI } : s);
+      localStorage.setItem(COLUMN_SETTINGS, JSON.stringify(nextSettings));
+      return nextSettings;
+    });
     reloadSticky();
   }, [reloadSticky]);
 
@@ -428,29 +392,31 @@ export default function DataTable() {
                         variant="light"
                         className="min-w-6 w-6 h-6"
                         title={MESSAGES.STICKY_CHECKBOX_TITLE}
-                        onClick={() =>
-                          handleToggleShowInSticky(i - 1, !shownColumnsState.includes(i - 1))
-                        }
+                        onClick={() => {
+                          const setting = columnSettings.find(s => s.index === i - 1);
+                          handleToggleShowInSticky(i - 1, !setting?.isShown);
+                        }}
                       >
-                        {shownColumnsState.includes(i - 1) ? (
+                        {columnSettings.find(s => s.index === i - 1)?.isShown ? (
                           <PiEyeLight className="text-primary text-base" />
                         ) : (
                           <PiEyeSlashLight className="text-gray-400 text-base" />
                         )}
                       </Button>
 
-                      {shownColumnsState.includes(i - 1) && (
+                      {columnSettings.find(s => s.index === i - 1)?.isShown && (
                         <Button
                           isIconOnly
                           size="sm"
                           variant="light"
                           className="min-w-6 w-6 h-6"
                           title={MESSAGES.SPEECH_CHECKBOX_TITLE}
-                          onClick={() =>
-                            handleToggleSpeechInSticky(i - 1, !speechColumnsState.includes(i - 1))
-                          }
+                          onClick={() => {
+                            const setting = columnSettings.find(s => s.index === i - 1);
+                            handleToggleSpeechInSticky(i - 1, !setting?.isSpeech);
+                          }}
                         >
-                          {speechColumnsState.includes(i - 1) ? (
+                          {columnSettings.find(s => s.index === i - 1)?.isSpeech ? (
                             <PiSpeakerHighLight className="text-primary text-base" />
                           ) : (
                             <PiSpeakerSlashLight className="text-gray-400 text-base" />
@@ -461,13 +427,13 @@ export default function DataTable() {
                   )}
                 </div>
 
-                {i > 1 && i < columnNames.length - 1 && speechColumnsState.includes(i - 1) && voices.length > 0 && (
+                {i > 1 && i < columnNames.length - 1 && columnSettings.find(s => s.index === i - 1)?.isSpeech && voices.length > 0 && (
                   <Select
                     size="sm"
                     aria-label="Select voice"
                     placeholder="Voice"
                     className="w-full min-w-[120px]"
-                    selectedKeys={speechVoicesState[i - 1] ? [speechVoicesState[i - 1]] : []}
+                    selectedKeys={columnSettings.find(s => s.index === i - 1)?.voiceName ? [columnSettings.find(s => s.index === i - 1)?.voiceName as string] : []}
                     onSelectionChange={(keys) => {
                       const voiceURI = Array.from(keys)[0] as string;
                       if (voiceURI) handleVoiceChange(i - 1, voiceURI);
@@ -495,7 +461,7 @@ export default function DataTable() {
                 <TableCell key={columnName.key}>
                   {columnName.key !== "isRemember" ? (
                     <div className="flex items-center gap-2">
-                      {j > 1 && j < columnNames.length - 1 && speechColumnsState.includes(j - 1) && dataObject[columnName.key] && (
+                      {j > 1 && j < columnNames.length - 1 && dataObject[columnName.key] && (
                         <Button
                           isIconOnly
                           size="sm"
