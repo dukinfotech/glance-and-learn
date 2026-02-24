@@ -6,7 +6,7 @@ import SettingsTab from "../components/SettingsTab";
 import { RiHome2Fill, RiSettings2Fill } from "react-icons/ri";
 import { useSettingStore } from "../stores/setting-store";
 import { useGlobalStore } from "../stores/global-store";
-import { APP_NAME, SHOWN_COLUMNS } from "../const";
+import { APP_NAME } from "../const";
 import { MESSAGES } from "../messages";
 
 export default function HomePage() {
