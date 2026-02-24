@@ -173,6 +173,11 @@ export default function DataTable() {
         try {
           const _data = await listData(selectedDB, keyword);
           // console.log(_data); // Removed console log
+
+          if (stickyWindow.isRandom) {
+            _data.sort(() => Math.random() - 0.5);
+          }
+
           setData(_data);
         } catch (e) {
           console.error("Failed to list data", e);
