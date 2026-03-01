@@ -239,7 +239,7 @@ export default function SettingsTab() {
           startContent={<RiFontSize2 />}
           label={MESSAGES.FONT_SIZE}
           type="number"
-          min={5}
+          min={STICKY_WINDOW_DEFAULT_FONTSIZE}
           value={stickyWindow.fontSize.toString()}
           onValueChange={handleChangeFontSize}
           variant="flat"
