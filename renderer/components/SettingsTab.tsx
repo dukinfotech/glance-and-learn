@@ -239,7 +239,6 @@ export default function SettingsTab() {
           startContent={<RiFontSize2 />}
           label={MESSAGES.FONT_SIZE}
           type="number"
-          min={STICKY_WINDOW_DEFAULT_FONTSIZE}
           value={stickyWindow.fontSize.toString()}
           onValueChange={handleChangeFontSize}
           variant="flat"
@@ -253,7 +252,6 @@ export default function SettingsTab() {
           startContent={<PiClockCountdown />}
           label={MESSAGES.INTERVAL}
           type="number"
-          min={Math.floor(STICKY_WINDOW_DEFAULT_INTERVAL / 1000)}
           value={Math.floor(stickyWindow.interval / 1000).toString()}
           onValueChange={handleChangeInterval}
           variant="flat"
