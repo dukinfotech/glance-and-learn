@@ -132,7 +132,15 @@ export default function NextPage() {
           }
         }
         if (_text.trim() !== "") {
-          newLines.push(_text);
+          // Remove font-size from HTML
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(_text, "text/html");
+          (doc.querySelectorAll("[style]") as NodeListOf<HTMLElement>).forEach(el => {
+            el.style.removeProperty("font-size");
+          });
+          const result = doc.body.innerHTML;
+
+          newLines.push(result);
         }
       }
     } else {
@@ -147,8 +155,18 @@ export default function NextPage() {
           console.error("Furigana conversion failed", e);
         }
       }
-      newLines = [_text];
+
+      // Remove font-size from HTML
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(_text, "text/html");
+      (doc.querySelectorAll("[style]") as NodeListOf<HTMLElement>).forEach(el => {
+        el.style.removeProperty("font-size");
+      });
+      const result = doc.body.innerHTML;
+
+      newLines = [result];
     }
+
 
     setDisplayLines(newLines);
 
@@ -291,7 +309,6 @@ export default function NextPage() {
       className="flex items-center"
       style={{
         whiteSpace: "nowrap",
-        fontSize: `${stickyWindow.fontSize}px`,
         padding: "4px",
       }}
       onMouseEnter={pauseInterval}
@@ -301,7 +318,10 @@ export default function NextPage() {
       <div id="sticky-content">
         {displayLines.map((line, index) => (
           <React.Fragment key={index}>
-            <div dangerouslySetInnerHTML={{ __html: line }} />
+            <div
+              style={{ fontSize: `${stickyWindow.fontSize}px` }}
+              dangerouslySetInnerHTML={{ __html: line }}
+            />
             {index < displayLines.length - 1 && <hr className="border-gray-300 my-1" />}
           </React.Fragment>
         ))}
