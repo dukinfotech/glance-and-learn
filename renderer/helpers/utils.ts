@@ -5,3 +5,13 @@ export const shuffleArray = (array: Array<any>) => {
   }
   return array;
 };
+
+export const removeFontSize = (text: string) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, "text/html");
+  (doc.querySelectorAll("[style]") as NodeListOf<HTMLElement>).forEach(el => {
+    el.style.removeProperty("font-size");
+  });
+  const result = doc.body.innerHTML;
+  return result;
+};

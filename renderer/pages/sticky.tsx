@@ -6,6 +6,7 @@ import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 import { COLUMN_SETTINGS, STICKY_WINDOW_DEFAULT_FONTSIZE } from "../const";
 import useDataBase from "../hooks/useDatabase";
 import Say, { Composer } from "react-say";
+import { removeFontSize } from "../helpers/utils";
 
 
 interface DataRow {
@@ -133,14 +134,8 @@ export default function NextPage() {
         }
         if (_text.trim() !== "") {
           // Remove font-size from HTML
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(_text, "text/html");
-          (doc.querySelectorAll("[style]") as NodeListOf<HTMLElement>).forEach(el => {
-            el.style.removeProperty("font-size");
-          });
-          const result = doc.body.innerHTML;
-
-          newLines.push(result);
+          const removedFontSizeText = removeFontSize(_text);
+          newLines.push(removedFontSizeText);
         }
       }
     } else {
@@ -157,14 +152,9 @@ export default function NextPage() {
       }
 
       // Remove font-size from HTML
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(_text, "text/html");
-      (doc.querySelectorAll("[style]") as NodeListOf<HTMLElement>).forEach(el => {
-        el.style.removeProperty("font-size");
-      });
-      const result = doc.body.innerHTML;
+      const removedFontSizeText = removeFontSize(_text);
 
-      newLines = [result];
+      newLines = [removedFontSizeText];
     }
 
 

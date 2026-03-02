@@ -37,6 +37,7 @@ type ColumnSettingsType = {
 
 import { MESSAGES } from "../messages";
 import { PiTextTLight, PiTextTSlash, PiSpeakerHighLight, PiSpeakerSlashLight, PiEyeLight, PiEyeSlashLight } from "react-icons/pi";
+import { removeFontSize } from "../helpers/utils";
 
 
 const DEFAULT_COLUMN_NAMES = {
@@ -51,25 +52,18 @@ const FuriganaCell = ({ text, kuroshiro, isFurigana }: { text: string, kuroshiro
   const { stickyWindow } = useSettingStore();
 
   useEffect(() => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, "text/html");
-
-    // tìm tất cả phần tử có style
-    (doc.querySelectorAll("[style]") as NodeListOf<HTMLElement>).forEach(el => {
-      el.style.removeProperty("font-size");
-    });
-
-    const result = doc.body.innerHTML;
+    // Remove font-size from HTML
+    const removedFontSizeText = removeFontSize(text);
 
     if (isFurigana && kuroshiro && text) {
-      kuroshiro.convert(result, { mode: "furigana", to: "hiragana" })
+      kuroshiro.convert(removedFontSizeText, { mode: "furigana", to: "hiragana" })
         .then(res => setConvertedText(res))
         .catch(err => {
           console.error("Furigana conversion failed", err);
-          setConvertedText(result);
+          setConvertedText(removedFontSizeText);
         });
     } else {
-      setConvertedText(result);
+      setConvertedText(removedFontSizeText);
     }
   }, [text, kuroshiro, isFurigana]);
 
