@@ -85,9 +85,9 @@ export default function CreateDBModal({ onClose }: CreateDBModalProps) {
     try {
       const { columnNames, data } = await readDataFromExcel(dataSet);
       await insertDB(dataSet.name, columnNames, data);
-      fetchListDB();
+      toast.success(MESSAGES.CREATE_DB_SUCCESS);
     } catch (error) {
-      toast.error(MESSAGES.CREATE_DB_FAIL);
+      toast.error(error.message);
       console.error(error);
       logError(error);
     }

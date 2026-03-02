@@ -16,8 +16,9 @@ const useDataBase = () => {
       });
       toast.success(MESSAGES.CREATE_DB_SUCCESS);
     } catch (error) {
-      toast.error(MESSAGES.CREATE_DB_FAIL);
+      toast.error(error.message);
       console.error(error);
+      logError(error);
     }
   }, []);
 
@@ -28,8 +29,9 @@ const useDataBase = () => {
       });
       return databaseNames;
     } catch (error) {
-      toast.error(MESSAGES.LIST_DB_FAIL);
+      toast.error(error.message);
       console.error(error);
+      logError(error);
     }
   }, []);
 
@@ -38,8 +40,9 @@ const useDataBase = () => {
       await window.ipc.invoke("database.delete", { name: dbName });
       toast.success(MESSAGES.DELETE_DB_SUCCESS);
     } catch (error) {
-      toast.error(MESSAGES.DELETE_DB_FAIL);
+      toast.error(error.message);
       console.error(error);
+      logError(error);
     }
   }, []);
 
@@ -52,8 +55,9 @@ const useDataBase = () => {
       // toast.success(MESSAGES.LOAD_DATA_SUCCESS); // Removed to prevent spam
       return data;
     } catch (error) {
-      toast.error(MESSAGES.LOAD_DATA_FAIL);
+      toast.error(error.message);
       console.error(error);
+      logError(error);
       return [];
     }
   }, []);
@@ -67,8 +71,9 @@ const useDataBase = () => {
       });
       toast.success(MESSAGES.UPDATE_DATA_SUCCESS);
     } catch (error) {
-      toast.error(MESSAGES.UPDATE_DATA_FAIL);
+      toast.error(error.message);
       console.error(error);
+      logError(error);
     }
   }, []);
 
@@ -79,8 +84,9 @@ const useDataBase = () => {
       });
       return data;
     } catch (error) {
-      toast.error(MESSAGES.UPDATE_DATA_FAIL);
+      toast.error(error.message);
       console.error(error);
+      logError(error);
     }
   }, []);
 
