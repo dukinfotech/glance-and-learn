@@ -121,6 +121,7 @@ export default function CreateDBModal({ onClose }: CreateDBModalProps) {
             type="file"
             accept=".xlsx,.xls"
             variant="flat"
+            value={null}
             onChange={(e) => handleFileChange(e)}
           />
 
