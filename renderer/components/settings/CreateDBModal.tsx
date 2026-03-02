@@ -121,6 +121,8 @@ export default function CreateDBModal({ onClose }: CreateDBModalProps) {
             type="file"
             accept=".xlsx,.xls"
             variant="flat"
+            // @ts-expect-error -- Known issue with NextUI's Input component
+            value={null}
             onChange={(e) => handleFileChange(e)}
           />
 
