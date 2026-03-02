@@ -16,7 +16,7 @@ import { MESSAGES } from "../../messages";
 
 export type DataSetType = {
   name: string;
-  file: File;
+  file: File | null;
   rowFrom: number;
   rowTo: number;
   columnFrom: number;
@@ -121,8 +121,6 @@ export default function CreateDBModal({ onClose }: CreateDBModalProps) {
             type="file"
             accept=".xlsx,.xls"
             variant="flat"
-            // @ts-expect-error -- Known issue with NextUI's Input component
-            value={null}
             onChange={(e) => handleFileChange(e)}
           />
 
